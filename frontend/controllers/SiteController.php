@@ -1,8 +1,11 @@
 <?php
 namespace frontend\controllers;
 
+use frontend\models\search\ImageSearch;
+use frontend\modules\api\v1\resources\Article;
 use Yii;
 use frontend\models\ContactForm;
+use yii\data\DataProviderInterface;
 use yii\web\Controller;
 
 /**
@@ -23,38 +26,23 @@ class SiteController extends Controller
                 'class' => 'yii\captcha\CaptchaAction',
                 'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null
             ],
-            'set-locale'=>[
-                'class'=>'common\actions\SetLocaleAction',
-                'locales'=>array_keys(Yii::$app->params['availableLocales'])
+            'set-locale' => [
+                'class' => 'common\actions\SetLocaleAction',
+                'locales' => array_keys(Yii::$app->params['availableLocales'])
             ]
         ];
     }
 
     public function actionIndex()
     {
-        return $this->render('index');
+        $searchModel = new ImageSearch();
+        $dataProvider = $searchModel->search(\Yii::$app->request->queryParams, true);
+        return $this->render('index', ['dataProvider' => $dataProvider]);
     }
 
-    public function actionContact()
+    public function actionView($id)
     {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post())) {
-            if ($model->contact(Yii::$app->params['adminEmail'])) {
-                Yii::$app->getSession()->setFlash('alert', [
-                    'body'=>Yii::t('frontend', 'Thank you for contacting us. We will respond to you as soon as possible.'),
-                    'options'=>['class'=>'alert-success']
-                ]);
-                return $this->refresh();
-            } else {
-                Yii::$app->getSession()->setFlash('alert', [
-                    'body'=>\Yii::t('frontend', 'There was an error sending email.'),
-                    'options'=>['class'=>'alert-danger']
-                ]);
-            }
-        }
-
-        return $this->render('contact', [
-            'model' => $model
-        ]);
+        $image = Article::find()->andWhere(['id'=>$id])->one();
+        return $this->render('view',['image'=>$image]);
     }
 }
